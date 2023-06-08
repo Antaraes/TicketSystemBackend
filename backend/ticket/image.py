@@ -2,7 +2,7 @@ import pytesseract as pss
 pss.pytesseract.tesseract_cmd=r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 from PIL import Image
 import json
-
+# from I_image2text import wave,kpay
 def imageDetect(image):
     img = Image.open(image)
     text = pss.image_to_string(img)
@@ -17,5 +17,9 @@ def imageDetect(image):
 
     print(json.dumps(data, indent=4))
 
-# imageDetect('./../media/orderImages/bay3_gb8pDah.jpg')
+# def imageDetect(image):
+#     data = kpay.extract_text(image)
+#     print(data)
+
+# imageDetect('./../media/orderImages/bay.jpg')
 # ./../meida/orderImages/bay3_shhytsj.jpg'

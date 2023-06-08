@@ -5,10 +5,13 @@ from rest_framework.response import Response
 from .models import Ticket,Order
 from rest_framework.views import APIView
 from rest_framework import permissions,status
-from .serializers import TicketSerializer,OrderSerializer
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from .serializers import TicketSerializer,OrderSerializer,PaymentSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import json
-from .image import imageDetect
+from django.conf import settings
+from .I_image2text import image
 import ast
 # Create your views here.
 class TicketViewSet(viewsets.ModelViewSet):
@@ -21,6 +24,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         user = request.user
         # number = request.data.get('number')
         number = request.data.get('number')
+        print(number)
         if Ticket.objects.filter(number=number,status__in=['C','P']).exists():
             return Response({'error':"Ticket number already chosen or pending"},status=400)
         # created_tickets = Ticket.create_tickets(user, number)
@@ -68,16 +72,58 @@ class OrderView(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             user = request.user
-            numbers = request.data.get('numbers')
-            with transaction.atomic():
-                order = serializer.save(user=user)
-                tickets = serializer.create_tickets(user=user, order=order, numbers=numbers)
+            numbers_json = request.data.get('numbers')
+            numbers = json.loads(numbers_json)
+            order_image = request.data.get('order_image')
+            file_name = default_storage.save('orderImages/' + order_image.name, ContentFile(order_image.read()))
+            image_url = self.get_image_url(file_name)
 
-                # serializer.save(user=user,numbers=numbers_list)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            data = image.imageDetect(image_url[1:])
+            print(data)
+            if data != False:
+                get_Name = data["Name"]
+                get_Type = data["Type"]
+                get_Amount = data["Amount"]
+                get_Phone = data["Phone"]
+                get_Date = data["Date"]
+                get_TransactionID = data['Transaction Id']
+                print(get_Date,get_Name)
+                with transaction.atomic():
+
+                    order = serializer.save(user=user)
+                    payment_serializer = PaymentSerializer(data={
+                        'order': order.id,
+                        'p_Name': get_Name,
+                        'p_Type': get_Type,
+                        'p_Amount': get_Amount,
+                        'p_Phone': get_Phone,
+                        'p_TransactionID': get_TransactionID,
+                        'p_Date': get_Date
+                    })
+                    if not payment_serializer.is_valid():
+                        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    payment = payment_serializer.save()
+                    tickets = serializer.create_tickets(user=user, order=order, numbers=numbers)
+                    order.payment = payment
+                    order.save()
+                    # serializer.save(user=user,numbers=numbers_list)
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                print("Invalid Photo")
+                return Response({"message": "Invalid Photo"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            errors = OrderSerializer.errors
+            errors.update(PaymentSerializer.errors)
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # Delete the order_image file if it exists
+        if instance.order_image:
+            default_storage.delete(instance.order_image.name)
+
+        return super().destroy(request, *args, **kwargs)
     def get_image_url(self, image):
         # Assuming the image is stored locally
-        return settings.BASE_URL + image.url
+        return settings.MEDIA_URL  +  image

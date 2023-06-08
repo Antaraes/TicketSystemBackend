@@ -13,13 +13,21 @@ class Order(models.Model):
     numbers = ArrayField(models.IntegerField(max_length=10), blank=True,null=True)
     order_image = models.ImageField(upload_to=upload_to,default='orderImages/default.jpg')
     paid_amount = models.DecimalField(max_digits=8,decimal_places=2,blank=True,null=True)
-
+    payment = models.OneToOneField('Payment', related_name='payment', on_delete=models.CASCADE, null=True, blank=True)
     class Meta:
         verbose_name_plural = "Orders"
 
     def get_image(self):
         if self.order_image:
             return 'http://127.0.0.1:8000' + self.order_image.url
+class Payment(models.Model):
+    order = models.ForeignKey(Order, related_name='order_payment', on_delete=models.CASCADE)
+    p_Name = models.CharField(max_length=200,null=False)
+    p_Type = models.CharField(max_length=20,null=False)
+    p_Amount = models.CharField(max_length=20,null=False)
+    p_Phone = models.CharField(max_length=20,null=False)
+    p_TransactionID = models.CharField(max_length=30,null=False)
+    p_Date = models.CharField(max_length=40,null=False)
 class Ticket(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE,null=True)
     order = models.ForeignKey(Order,on_delete=models.CASCADE,null=True)
