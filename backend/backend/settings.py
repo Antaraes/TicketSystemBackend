@@ -95,15 +95,27 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'TicketSystem',
+#         'USER': 'postgres',
+#         'PASSWORD': 'antares',
+#         'HOST': 'localhost',
+#         'PORT': '5432'
+#     }
+# }
+# To use Neon with Django, you have to create a Project on Neon and specify the project connection settings in your settings.py in the same way as for standalone Postgres.
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'TicketSystem',
-        'USER': 'postgres',
-        'PASSWORD': 'antares',
-        'HOST': 'localhost',
-        'PORT': '5432'
-    }
+  'default': {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': 'neondb',
+    'USER': 'jackalanmus',
+    'PASSWORD': 'txbB0Zd5FaXU',
+    'HOST': 'ep-fancy-hat-564271.us-east-2.aws.neon.tech',
+    'PORT': '5432',
+  }
 }
 
 # Password validation
